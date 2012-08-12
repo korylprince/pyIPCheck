@@ -1,0 +1,79 @@
+{{extend 'layout.html'}}
+
+{{
+downser = [x for x in servers if not x.status]
+if len(downser) == 1:
+    response.write(SPAN('There is 1 down server ({0})!'.format(downser[0].description), _class="warning"))
+elif len(downser) > 1:
+    downstr = ''
+    for x in downser[:-1]:
+        downstr += x.description+', '
+    pass
+    downstr += downser[-1].description
+    response.write(SPAN('There are {0} down servers ({1})!'.format(len(downser),downstr), _class="warning"))
+pass
+}}
+<br />
+{{
+downswi = [x for x in switches if not x.status]
+if len(downswi) == 1:
+    response.write(SPAN('There is 1 down switch ({0})!'.format(downswi[0].description), _class="warning"))
+elif len(downswi) > 1:
+    downstr = ''
+    for x in downswi[:-1]:
+        downstr += x.description+', '
+    pass
+    downstr += downswi[-1].description
+    response.write(SPAN('There are {0} down switches ({1})!'.format(len(downswi),downstr), _class="warning"))
+pass
+}}
+
+<div class="wrapper twelve columns center">
+<h4>Servers</h4>
+{{for x in servers:}}
+<div class="{{=alternate.next()}}"><span class="six columns description"><strong>{{=x.description}}</strong></span><span class="four columns address">{{=x.ip_address}} (<span class="port">{{=x.port}}</span>)</span><span class="one columns status"><img src="{{=URL('static','images/green.png') if x.status else URL('static','images/red.png')}}" /></span></div>
+{{pass}}
+</div>
+
+{{if len(servers)%2!=0: alternate.next() # reset ordering}}
+
+<div class="wrapper twelve columns center">
+<h4>Switches</h4>
+{{for x in switches:}}
+<div class="{{=alternate.next()}}"><span class="six columns description"><strong>{{=x.description}}</strong></span><span class="four columns address">{{=x.ip_address}} (<span class="port">{{=x.port}}</span>)</span><span class="one columns status"><img src="{{=URL('static','images/green.png') if x.status else URL('static','images/red.png')}}" /></span></div>
+{{pass}}
+</div>
+
+<style type='text/css'>
+.warning {
+    font-size: 16pt;
+    color: #d22;
+}
+.odd {
+
+    background-color: #eee;
+}
+.even, .odd {
+    font-size: 14pt;
+    padding-top: 6px;
+    overflow: hidden;
+    border: 1px solid #444;
+    -moz-border-radius: 6px;
+    -khtml-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border-radius: 6px;
+    margin-bottom: -1px;
+}
+.status {
+    float: right;
+}
+.wrapper {
+    margin-bottom: 10px;
+}
+.address{
+    color: #22d;
+}
+.port {
+    color: #2d2;
+}
+</style>

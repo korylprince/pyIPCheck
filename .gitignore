@@ -1,0 +1,9 @@
+models/db.py
+sessions/*
+errors/*
+databases/*
+compiled/*
+cache/*
+private/*
+*.pyc
+*.bak

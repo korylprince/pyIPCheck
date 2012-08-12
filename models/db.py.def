@@ -1,0 +1,123 @@
+# -*- coding: utf-8 -*- 
+
+db = DAL('sqlite://services')
+
+## (optional) optimize handling of static files
+response.optimize_css = 'concat,minify,inline'
+response.optimize_js = 'concat,minify,inline'
+
+db.define_table('services',
+Field('description','string'),\
+Field('ip_address','string'),\
+Field('port','string'),\
+Field('type','string',requires=IS_IN_SET(('server','switch')))
+)
+
+# Authentication - http://www.web2pyslices.com/slice/show/1468/how-to-set-up-web2py-ldap-with-windows-active-directory
+# Or use your own method!
+from gluon.tools import Auth
+auth = Auth(db, hmac_key=Auth.get_or_create_key())
+auth.define_tables(username=True)
+auth.settings.create_user_groups=False
+# all we need is login
+auth.settings.actions_disabled=['register','change_password','request_reset_password','retrieve_username','profile']
+# you don't have to remember me
+auth.settings.remember_me_form = False
+# ldap authentication and not save password on web2py
+from gluon.contrib.login_methods.ldap_auth import ldap_auth
+auth.settings.login_methods = [ldap_auth(mode='ad',
+allowed_groups = ['Domain Group1','Domain Group2'],
+bind_dn = 'CN=Admin User,OU=baseou,DC=example,DC=com',
+bind_pw = 'pass',
+group_dn = 'OU=Domain Groups,OU=baseou,DC=example,DC=com',
+group_name_attrib = 'cn',
+group_member_attrib = 'member',
+group_filterstr = 'objectClass=Group',
+server='server.example.com,
+base_dn='OU=baseou,DC=example,DC=com')]
+
+#alternating classes
+import itertools
+alternate = itertools.cycle(('odd','even'))
+
+#tester function
+def runscan():
+    import threading
+    import Queue
+    import socket
+
+    #define number of threads
+    threads = 30 
+
+    def run(inq,outq):
+        while True:
+            try:
+                #get ip, port to work on
+                service = inq.get_nowait()
+                #define socket
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(1)
+                try:
+                    #connect and add to queue
+                    sock.connect((service.ip_address,int(service.port)))
+                    sock.shutdown(2)
+                    service['status'] = True
+                    outq.put(service)
+                #if the socket can't connect it's down
+                except:
+                    service['status'] = False
+                    outq.put(service)
+            #stop when there's no more ips
+            except Queue.Empty:
+                return
+
+    #Create Queues
+    inser = Queue.Queue()
+    outser = Queue.Queue()
+    inswi = Queue.Queue()
+    outswi = Queue.Queue()
+
+    #Add jobs to queues
+    for service in db(db.services.type == "server").select():
+        inser.put(service)
+    for service in db(db.services.type == "switch").select():
+        inswi.put(service)
+
+    threadlist = []
+    #start half the threads for the servers
+    for thread in range(threads/2):
+        t = threading.Thread(target=run,args=(inser,outser))
+        t.start()
+        threadlist.append(t)
+
+    #start the other half for the switches
+    for thread in range(threads/2):
+        t = threading.Thread(target=run,args=(inswi,outswi))
+        t.start()
+        threadlist.append(t)
+
+    #wait for all threads to stop
+    for thread in threadlist:
+        thread.join()
+
+    #Create a list from the Queues
+    servers = []
+    try:
+        for i in iter(outser.get_nowait, 'STOP'):
+            servers.append(i)
+    except Queue.Empty:
+        pass
+
+    switches = []
+    try:
+        for i in iter(outswi.get_nowait, 'STOP'):
+            switches.append(i)
+    except Queue.Empty:
+        pass
+    
+    servers.sort(key=lambda x:x['description'])
+    switches.sort(key=lambda x:x['description'])
+    return servers,switches
+
+# set Title for all pages
+response.title = 'IPCheck'
