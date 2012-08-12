@@ -2,8 +2,7 @@
 
 {{
 downser = [x for x in servers if not x.status]
-if len(downser) == 1:
-    response.write(SPAN('There is 1 down server ({0})!'.format(downser[0].description), _class="warning"))
+if len(downser) == 1: response.write(SPAN('There is 1 down server ({0})!'.format(downser[0].description), _class="warning"))
 elif len(downser) > 1:
     downstr = ''
     for x in downser[:-1]:
@@ -74,6 +73,6 @@ pass
     color: #22d;
 }
 .port {
-    color: #2d2;
+    color: #f80;
 }
 </style>
