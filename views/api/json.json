@@ -1,0 +1,13 @@
+{{
+from gluon.serializers import json
+
+servers = []
+switches = []
+for x in response._vars['servers']:
+servers.append({"host":x.description,"ip":x.ip_address,"port":x.port,"up":x.status})
+pass
+for x in response._vars['switches']:
+switches.append({"host":x.description,"ip":x.ip_address,"port":x.port,"up":x.status})
+pass
+}}
+{{=XML(json({"servers":servers,"switches":switches}))}}
